@@ -20,14 +20,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'j%l8=@=k6i8ksa17^2v2e5pye%r9nqs(%vb@oz&vzq*62gy8*_'
+SECRET_KEY = 'django-insecure-#8mi6)dgzk8u4y(c_$f4*aai06@yp0cpi7wmx$p7w6y-)6e2n4'
 #django-insecure-#8mi6)dgzk8u4y(c_$f4*aai06@yp0cpi7wmx$p7w6y-)6e2n4
+#j%l8=@=k6i8ksa17^2v2e5pye%r9nqs(%vb@oz&vzq*62gy8*_
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 #ALLOWED_HOSTS = ['*']
-ALLOWED_HOSTS = ['192.168.200.3', 'localhost']
+ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['192.168.200.3', 'localhost', '127.0.0.1']
+
 
 
 # Application definition
@@ -42,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'api',
     'corsheaders',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -122,6 +126,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

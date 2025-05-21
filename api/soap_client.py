@@ -8,11 +8,11 @@ import hashlib
 import json
 import base64
 
-WSDL_URL = 'http://krbsc25:7047/BC250/WS/KRB%20SACCO%20TEST/Codeunit/portalService?wsdl'
-#http://197.232.170.121:7047/BC240/WS/POLYTECH%20SACCO/Codeunit/PortalWebService
+WSDL_URL = 'http://197.232.170.121:7047/BC240/WS/POLYTECH%20SACCO/Codeunit/PortalWebService?wsdl'
+#http://krbsc25:7047/BC250/WS/KRB%20SACCO%20TEST/Codeunit/portalService
 # OPTIONAL: If credentials are needed, insert them here
-USERNAME = 'KRBADMIN'  # leave blank if not needed
-PASSWORD = 'KRBAdmin@2025'
+USERNAME = 'Swizzsoft'  # leave blank if not needed
+PASSWORD = 'Swizzsoft@2024'
 
 def get_member_account_statistics(member_no):
     session = Session()
@@ -325,3 +325,226 @@ def get_loan_statement_pdf(member_no, filter_text, big_text):
 
     except Exception as e:
         return {"error": str(e)}
+
+
+def get_loan_products():
+    session = Session()
+    if USERNAME and PASSWORD:
+        session.auth = HTTPBasicAuth(USERNAME, PASSWORD)
+
+    transport = Transport(session=session, timeout=30)
+    settings = Settings(strict=False, xml_huge_tree=True)
+    client = Client(wsdl=WSDL_URL, transport=transport, settings=settings)
+
+    try:
+        result = client.service.Fnloanssetup()
+        raw_data = result  # No .return_value needed
+
+        loan_products = []
+        if raw_data:
+            entries = raw_data.split(":::")
+            for entry in entries:
+                if ":" in entry:
+                    parts = entry.split(":", 1)
+                    loan_products.append({
+                        "code": parts[0].strip(),
+                        "name": parts[1].strip()
+                    })
+
+        return loan_products
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def get_loan_product_details(product_type):
+    session = Session()
+    if USERNAME and PASSWORD:
+        session.auth = HTTPBasicAuth(USERNAME, PASSWORD)
+
+    transport = Transport(session=session, timeout=30)
+    settings = Settings(strict=False, xml_huge_tree=True)
+    client = Client(wsdl=WSDL_URL, transport=transport, settings=settings)
+
+    try:
+        result = client.service.FnGetLoanProductDetails(productType=product_type)
+        raw_data = result  # Already a string
+
+        if not raw_data:
+            return {"error": "No data returned from service"}
+
+        parts = raw_data.split(":::")
+        if len(parts) != 4:
+            return {"error": "Unexpected format in return_value"}
+
+        return {
+            "minAmount": parts[0].strip(),
+            "maxAmount": parts[1].strip(),
+            "interestRate": parts[2].strip(),
+            "maxInstallments": parts[3].strip()
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+    
+
+
+def apply_for_loan(bosa_no, loan_type, loan_amount, loan_purpose, repayment_period):
+    session = Session()
+    if USERNAME and PASSWORD:
+        session.auth = HTTPBasicAuth(USERNAME, PASSWORD)
+
+    transport = Transport(session=session, timeout=30)
+    settings = Settings(strict=False, xml_huge_tree=True)
+    client = Client(wsdl=WSDL_URL, transport=transport, settings=settings)
+
+    # Step 1: Fetch loan product limits
+    try:
+        product_details = client.service.FnGetLoanProductDetails(productType=loan_type)
+        parts = product_details.split(":::")
+        if len(parts) != 4:
+            return {"error": "Invalid loan product configuration"}
+
+        min_amount = float(parts[0].replace(",", "").strip())
+        max_amount = float(parts[1].replace(",", "").strip())
+        max_installments = int(parts[3].strip())
+
+    except Exception as e:
+        return {"error": f"Failed to fetch product details: {str(e)}"}
+
+    # Step 2: Validate loan request
+    try:
+        loan_amount = float(loan_amount)
+        repayment_period = int(repayment_period)
+    except:
+        return {"error": "Loan amount and repayment period must be valid numbers"}
+
+    if loan_amount < min_amount:
+        return {"error": f"Loan amount must be at least {min_amount}"}
+    if loan_amount > max_amount:
+        return {"error": f"Loan amount must not exceed {max_amount}"}
+    if repayment_period > max_installments:
+        return {"error": f"Repayment period exceeds max allowed: {max_installments} months"}
+
+    # Step 3: Submit loan application
+    try:
+        response = client.service.OnlineLoanApplication(
+            bosaNo=bosa_no,
+            loanType=loan_type,
+            loanAmount=loan_amount,
+            loanpurpose=loan_purpose,
+            repaymentPeriod=repayment_period
+        )
+
+        return {"message": response}
+
+    except Exception as e:
+        return {"error": f"Loan application failed: {str(e)}"}
+
+
+def get_online_applied_loans(member_no):
+    session = Session()
+    if USERNAME and PASSWORD:
+        session.auth = HTTPBasicAuth(USERNAME, PASSWORD)
+
+    transport = Transport(session=session, timeout=30)
+    settings = Settings(strict=False, xml_huge_tree=True)
+    client = Client(wsdl=WSDL_URL, transport=transport, settings=settings)
+
+    try:
+        result = client.service.fnOnlineLoans(memberNumber=member_no)
+
+        if not result:
+            return {"loans": []}
+
+        loan_entries = result.strip().split("::;")
+        loans = []
+
+        for entry in loan_entries:
+            parts = entry.strip().split(":::")
+            if len(parts) >= 4:
+                loans.append({
+                    "loan_no": parts[0],
+                    "amount": parts[1],
+                    "status": parts[2],
+                    "applied_date": parts[3]
+                })
+
+        return {"loans": loans}
+
+    except Exception as e:
+        return {"error": f"Failed to fetch online loans: {str(e)}"}
+
+
+def edit_online_loan(loan_number, member_number, amount_requested, loan_type, repayment_period):
+    session = Session()
+    if USERNAME and PASSWORD:
+        session.auth = HTTPBasicAuth(USERNAME, PASSWORD)
+
+    transport = Transport(session=session, timeout=30)
+    settings = Settings(strict=False, xml_huge_tree=True)
+    client = Client(wsdl=WSDL_URL, transport=transport, settings=settings)
+
+    try:
+        result = client.service.editOnlineLoanAsync(
+            loanNumber=loan_number,
+            memberNumber=member_number,
+            amountRequested=amount_requested,
+            loanType=loan_type,
+            repaymentPeriod=repayment_period
+        )
+
+        return {"message": str(result).strip()}
+
+    except Exception as e:
+        return {"error": f"Failed to edit loan: {str(e)}"}
+
+
+def request_guarantorship(member_number, loan_number, amount):
+    session = Session()
+    if USERNAME and PASSWORD:
+        session.auth = HTTPBasicAuth(USERNAME, PASSWORD)
+
+    transport = Transport(session=session, timeout=30)
+    settings = Settings(strict=False, xml_huge_tree=True)
+    client = Client(wsdl=WSDL_URL, transport=transport, settings=settings)
+
+    try:
+        result = client.service.FnRequestGuarantorship(
+            memberNumber=member_number,
+            loanNumber=loan_number,
+            amount=amount
+        )
+
+        return {"message": str(result).strip()}
+
+    except Exception as e:
+        return {"error": f"Failed to send request guarantorship: {str(e)}"}
+
+def get_loan_guarantors(loan_no, member_number):
+    session = Session()
+    if USERNAME and PASSWORD:
+        session.auth = HTTPBasicAuth(USERNAME, PASSWORD)
+
+    transport = Transport(session=session, timeout=30)
+    settings = Settings(strict=False, xml_huge_tree=True)
+    client = Client(wsdl=WSDL_URL, transport=transport, settings=settings)
+
+    try:
+        result = client.service.FnGetGuarantors(
+            loanNo=loan_no,
+            memberNumber=member_number
+        )
+
+        raw_data = str(result).strip()
+
+        if not raw_data:
+            return []
+
+        guarantors = [g.strip() for g in raw_data.split(":::") if g.strip()]
+
+        return {"guarantors": guarantors}
+
+    except Exception as e:
+        return {"error": f"Failed to fetch guarantors: {str(e)}"}
+

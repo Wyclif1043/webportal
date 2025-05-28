@@ -20,16 +20,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#8mi6)dgzk8u4y(c_$f4*aai06@yp0cpi7wmx$p7w6y-)6e2n4'
+SECRET_KEY = 'j%l8=@=k6i8ksa17^2v2e5pye%r9nqs(%vb@oz&vzq*62gy8*_'
 #django-insecure-#8mi6)dgzk8u4y(c_$f4*aai06@yp0cpi7wmx$p7w6y-)6e2n4
 #j%l8=@=k6i8ksa17^2v2e5pye%r9nqs(%vb@oz&vzq*62gy8*_
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-#ALLOWED_HOSTS = ['*']
+#ALLOWED_HOSTS = ['197.232.170.121', 'localhost', '127.0.0.1']
 ALLOWED_HOSTS = ['*']
-ALLOWED_HOSTS = ['192.168.200.3', 'localhost', '127.0.0.1']
+#ALLOWED_HOSTS = ['192.168.200.3', 'localhost', '127.0.0.1']
 
 
 
@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'api',
     'corsheaders',
-    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -59,6 +58,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000",
+]
 
 ROOT_URLCONF = 'member_portal.urls'
 
@@ -125,7 +128,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+#STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
